@@ -7,12 +7,16 @@ from logging.handlers import RotatingFileHandler
 import os
 from sqlalchemy.event import listen
 from config import Config
+from flask_mail import Mail
+from flask_moment import Moment
 
 db = SQLAlchemy()
 migrate = Migrate()
 login = LoginManager()
 login.login_view = 'auth.PerformLogin'
 login.login_message = 'Пожалуйста, авторизуйтесь, чтобы увидеть эту страницу.'
+mail = Mail()
+moment = Moment()
 db_collate = 'ru_RU.UTF-8'
 
 def load_extension(dbapi_conn, unused):
@@ -27,6 +31,8 @@ def create_app(config_class=Config):
 	db.init_app(app)
 	migrate.init_app(app, db)
 	login.init_app(app)
+	mail.init_app(app)
+	moment.init_app(app)
 	
 	from app.errors import bp as errors_bp
 	app.register_blueprint(errors_bp)
@@ -40,8 +46,8 @@ def create_app(config_class=Config):
 	from app.api import bp as api_bp
 	app.register_blueprint(api_bp, url_prefix='/api')
 
-	if not app.debug:
-		if not os.path.exists('logs'):
+	if app.debug is False:
+		if os.path.exists('logs') is False:
 			os.mkdir('logs')
 		file_handler = RotatingFileHandler('logs/{}.log'.format(__name__), maxBytes=10240, backupCount=10, encoding='utf-8')
 		file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
